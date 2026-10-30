@@ -23,6 +23,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("Bootstrap:AdminEmail", AdminEmail);
         builder.UseSetting("Bootstrap:AdminPassword", AdminPassword);
         builder.UseSetting("Bootstrap:SampleSourceKey", SampleKey);
+        // Every test signs in; the real limit is covered by its own test.
+        builder.UseSetting("Auth:LoginAttemptsPerMinute", "100000");
     }
 
     public async Task InitializeAsync()
