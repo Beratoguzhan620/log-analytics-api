@@ -89,9 +89,13 @@ builder.Services.AddHealthChecks()
 var app = builder.Build();
 
 app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<DashboardSecurityHeaders>();
 app.UseSerilogRequestLogging();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+// The dashboard: plain files, no build step. Everything it shows comes from the same API.
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
@@ -109,8 +113,6 @@ app.MapScalarApiReference(options => options
     .DisableAgent()
     .DisableMcp()
     .DisableTelemetry());
-
-app.MapGet("/", () => Results.Redirect("/scalar")).ExcludeFromDescription();
 
 app.MapAuthEndpoints();
 app.MapUserEndpoints();
