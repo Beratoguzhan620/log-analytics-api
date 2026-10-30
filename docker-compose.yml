@@ -1,5 +1,5 @@
 # One command: docker compose up --build
-# API reference: http://localhost:8080/scalar
+# API reference: http://localhost:8080/scalar · the generator fills it with a day of sample logs
 # Sign in with ADMIN_EMAIL / ADMIN_PASSWORD (local defaults below; override them in .env).
 name: log-analytics
 
@@ -35,8 +35,25 @@ services:
       Database__MigrateOnStartup: "true"
       Bootstrap__AdminEmail: ${ADMIN_EMAIL:-admin@example.com}
       Bootstrap__AdminPassword: ${ADMIN_PASSWORD:-admin-password-local}
+      Bootstrap__SampleSourceKey: ${SAMPLE_SOURCE_KEY:-la_sampleap_sample-shop-key-change-me-in-the-env-file}
     ports:
       - "8080:8080"
+
+  # A small shop's services logging through the ordinary Serilog Seq sink: a day of history, then live traffic.
+  generator:
+    build:
+      context: .
+      args:
+        PROJECT: LogAnalytics.Generator
+    restart: on-failure
+    depends_on:
+      api:
+        condition: service_started
+    environment:
+      LOGS_URL: http://api:8080
+      LOGS_API_KEY: ${SAMPLE_SOURCE_KEY:-la_sampleap_sample-shop-key-change-me-in-the-env-file}
+      EVENTS_PER_SECOND: "8"
+      BACKFILL_HOURS: "24"
 
 volumes:
   db-data:
