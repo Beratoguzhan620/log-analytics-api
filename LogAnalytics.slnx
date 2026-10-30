@@ -3,6 +3,7 @@
     <Project Path="src/LogAnalytics.Core/LogAnalytics.Core.csproj" />
     <Project Path="src/LogAnalytics.Infrastructure/LogAnalytics.Infrastructure.csproj" />
     <Project Path="src/LogAnalytics.Api/LogAnalytics.Api.csproj" />
+    <Project Path="src/LogAnalytics.Generator/LogAnalytics.Generator.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/LogAnalytics.UnitTests/LogAnalytics.UnitTests.csproj" />
