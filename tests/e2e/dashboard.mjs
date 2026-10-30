@@ -107,7 +107,8 @@ await step('full-text search with a property filter finds one order', async () =
   await page.getByLabel('Property').fill(`OrderId:${order}`);
   await page.getByRole('button', { name: 'Search' }).click();
   await page.waitForURL(/prop=/);
-  await page.locator('.event-row').first().waitFor();
+  // The previous results stay on screen until the new ones arrive, so wait for the list to shrink.
+  await page.waitForFunction(() => document.querySelectorAll('.event-row').length === 1, null, { timeout: 15000 }).catch(() => {});
   const rows = await page.locator('.event-row .msg').allTextContents();
   expect(rows.length === 1 && rows[0].includes(order), `expected one row for ${order}, got ${rows.length}`);
 });
@@ -132,6 +133,7 @@ await step('an admin adds an alert rule', async () => {
 
 await step('an admin adds a source and sees its key once', async () => {
   await page.getByRole('link', { name: 'Sources' }).click();
+  await page.getByRole('heading', { name: 'Add a source' }).waitFor();
   await page.getByLabel('Name').fill(`Checkout ${Date.now()}`);
   await page.getByRole('button', { name: 'Add source' }).click();
   const key = await page.locator('.secret code').textContent();
