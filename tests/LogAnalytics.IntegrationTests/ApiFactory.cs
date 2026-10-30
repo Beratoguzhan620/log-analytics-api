@@ -5,7 +5,7 @@ using Testcontainers.PostgreSql;
 namespace LogAnalytics.IntegrationTests;
 
 /// <summary>Boots the real API against a throwaway PostgreSQL container shared by the whole collection.</summary>
-public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
+public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     public const string AdminEmail = "admin@example.com";
     public const string AdminPassword = "admin-password-for-tests";
