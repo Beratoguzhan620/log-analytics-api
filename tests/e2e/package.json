@@ -1,0 +1,9 @@
+{
+  "name": "log-analytics-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Browser flow through the dashboard against a running stack.",
+  "scripts": {
+    "test": "node dashboard.mjs"
+  }
+}

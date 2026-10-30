@@ -58,7 +58,7 @@ jobs:
           docker compose exec -T db psql -U logs -d log_analytics -tAc \
             "SELECT count(*) FROM pg_inherits i JOIN pg_class p ON p.oid = i.inhparent WHERE p.relname = 'log_events'" | grep -qE '^1[0-9]$'
           for i in $(seq 1 60); do
-            n=$(docker compose exec -T db psql -U logs -d log_analytics -tAc "SELECT count(*) FROM log_events")
+            n=$(docker compose exec -T db psql -U logs -d log_analytics -tAc "SELECT count(*) FROM log_events" 2>/dev/null || echo 0)
             [ "$n" -gt 10000 ] && break
             sleep 2
           done
@@ -69,6 +69,76 @@ jobs:
       - name: Show logs
         if: failure()
         run: docker compose logs --no-color
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose down --volumes
+
+  e2e:
+    name: Dashboard end-to-end
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Start the stack
+        run: docker compose up --build --detach --wait --wait-timeout 300
+
+      - name: Install Playwright
+        working-directory: tests/e2e
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Wait for the sample traffic
+        run: |
+          for i in $(seq 1 90); do
+            n=$(docker compose exec -T db psql -U logs -d log_analytics -tAc "SELECT count(*) FROM log_events WHERE level >= 4" 2>/dev/null || echo 0)
+            [ "$n" -gt 100 ] && break
+            sleep 2
+          done
+          echo "Errors so far: $n"
+
+      - name: Run the flow
+        working-directory: tests/e2e
+        run: node dashboard.mjs
+
+      - name: Keep the screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-screenshots
+          path: tests/e2e/output/
+          if-no-files-found: ignore
+
+      - name: Show logs
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose down --volumes
+
+  load:
+    name: Load test and query times
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start the stack
+        run: docker compose up --build --detach --wait --wait-timeout 300
+
+      - name: Send 500,000 events and time the queries
+        run: tests/load/load.sh | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Show logs
+        if: failure()
+        run: docker compose logs --no-color api
 
       - name: Stop the stack
         if: always()
