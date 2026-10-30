@@ -22,6 +22,132 @@ namespace LogAnalytics.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("LogAnalytics.Core.Alerts.AlertFiring", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("channel");
+
+                    b.Property<long>("Count")
+                        .HasColumnType("bigint")
+                        .HasColumnName("count");
+
+                    b.Property<bool?>("Delivered")
+                        .HasColumnType("boolean")
+                        .HasColumnName("delivered");
+
+                    b.Property<string>("DeliveryError")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("delivery_error");
+
+                    b.Property<DateTimeOffset>("FiredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fired_at");
+
+                    b.Property<Guid>("RuleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("rule_id");
+
+                    b.Property<string>("RuleName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("rule_name");
+
+                    b.Property<string>("SampleMessage")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("sample_message");
+
+                    b.Property<DateTimeOffset>("WindowStart")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("window_start");
+
+                    b.HasKey("Id")
+                        .HasName("pk_alert_firings");
+
+                    b.HasIndex("FiredAt")
+                        .HasDatabaseName("ix_alert_firings_fired_at");
+
+                    b.HasIndex("RuleId")
+                        .HasDatabaseName("ix_alert_firings_rule_id");
+
+                    b.ToTable("alert_firings", (string)null);
+                });
+
+            modelBuilder.Entity("LogAnalytics.Core.Alerts.AlertRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("channel");
+
+                    b.Property<TimeSpan>("Cooldown")
+                        .HasColumnType("interval")
+                        .HasColumnName("cooldown");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("enabled");
+
+                    b.Property<DateTimeOffset?>("LastFiredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_fired_at");
+
+                    b.Property<short>("MinLevel")
+                        .HasColumnType("smallint")
+                        .HasColumnName("min_level");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Service")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("service");
+
+                    b.Property<int>("Threshold")
+                        .HasColumnType("integer")
+                        .HasColumnName("threshold");
+
+                    b.Property<string>("WebhookUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("webhook_url");
+
+                    b.Property<TimeSpan>("Window")
+                        .HasColumnType("interval")
+                        .HasColumnName("window");
+
+                    b.HasKey("Id")
+                        .HasName("pk_alert_rules");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_alert_rules_name");
+
+                    b.ToTable("alert_rules", (string)null);
+                });
+
             modelBuilder.Entity("LogAnalytics.Core.Sources.Source", b =>
                 {
                     b.Property<Guid>("Id")
@@ -110,6 +236,16 @@ namespace LogAnalytics.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_users_email");
 
                     b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("LogAnalytics.Core.Alerts.AlertFiring", b =>
+                {
+                    b.HasOne("LogAnalytics.Core.Alerts.AlertRule", null)
+                        .WithMany()
+                        .HasForeignKey("RuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_alert_firings_alert_rules_rule_id");
                 });
 #pragma warning restore 612, 618
         }
