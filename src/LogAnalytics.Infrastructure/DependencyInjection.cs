@@ -1,3 +1,4 @@
+using LogAnalytics.Infrastructure.Ingestion;
 using LogAnalytics.Infrastructure.Partitions;
 using LogAnalytics.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,11 @@ public static class DependencyInjection
         services.AddDbContext<LogsDbContext>(options => ConfigureDbContext(options, connectionString));
         services.Configure<RetentionOptions>(configuration.GetSection(RetentionOptions.Section));
         services.AddScoped<PartitionMaintenance>();
+        services.AddSingleton(new LogsDataSource(connectionString));
+        services.Configure<IngestionOptions>(configuration.GetSection(IngestionOptions.Section));
+        services.AddSingleton<IngestionQueue>();
+        services.AddSingleton<LogWriter>();
+        services.AddHostedService(provider => provider.GetRequiredService<LogWriter>());
         return services;
     }
 
