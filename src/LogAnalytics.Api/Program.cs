@@ -3,12 +3,15 @@ using System.Text.Json.Serialization;
 using System.Text.Unicode;
 using System.Threading.RateLimiting;
 using LogAnalytics.Api.Common;
+using LogAnalytics.Api.Features.Alerts;
 using LogAnalytics.Api.Features.Auth;
 using LogAnalytics.Api.Features.Ingestion;
+using LogAnalytics.Api.Features.Search;
 using LogAnalytics.Api.Features.Sources;
 using LogAnalytics.Api.Features.Users;
 using LogAnalytics.Api.Logging;
 using LogAnalytics.Infrastructure;
+using LogAnalytics.Infrastructure.Alerts;
 using LogAnalytics.Infrastructure.Ingestion;
 using LogAnalytics.Infrastructure.Partitions;
 using LogAnalytics.Infrastructure.Persistence;
@@ -36,6 +39,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
 builder.Services.AddLogsInfrastructure(builder.Configuration, connectionString);
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddHostedService<PartitionMaintainer>();
+builder.Services.AddHostedService<AlertEvaluator>();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -112,6 +116,8 @@ app.MapAuthEndpoints();
 app.MapUserEndpoints();
 app.MapSourceEndpoints();
 app.MapIngestEndpoints();
+app.MapSearchEndpoints();
+app.MapAlertEndpoints();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });
