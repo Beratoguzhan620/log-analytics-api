@@ -55,8 +55,7 @@ public sealed class PartitionMaintenance(Persistence.LogsDbContext db, IOptions<
 
             var from = day.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
             var to = from.AddDays(1);
-            // Names and bounds come from dates formatted here, never from input, so they are safe to inline.
-            await db.Database.ExecuteSqlRawAsync(string.Create(CultureInfo.InvariantCulture,
+            await ExecuteDdlAsync(string.Create(CultureInfo.InvariantCulture,
                 $"CREATE TABLE {name} PARTITION OF {Parent} FOR VALUES FROM ('{from:yyyy-MM-dd}T00:00:00Z') TO ('{to:yyyy-MM-dd}T00:00:00Z')"),
                 cancellationToken);
             created.Add(name);
@@ -67,7 +66,7 @@ public sealed class PartitionMaintenance(Persistence.LogsDbContext db, IOptions<
         {
             if (DayOf(name) is { } day && day < OldestKeptDay)
             {
-                await db.Database.ExecuteSqlRawAsync($"DROP TABLE {name}", cancellationToken);
+                await ExecuteDdlAsync("DROP TABLE " + name, cancellationToken);
                 dropped.Add(name);
             }
         }
@@ -75,6 +74,13 @@ public sealed class PartitionMaintenance(Persistence.LogsDbContext db, IOptions<
         await transaction.CommitAsync(cancellationToken);
         return new PartitionChanges(created, dropped);
     }
+
+    /// <summary>
+    /// DDL cannot take parameters. Every name and bound passed here is built from a date in this class, or is a
+    /// catalog name that <see cref="DayOf"/> has matched against the partition pattern, never from input.
+    /// </summary>
+    private Task<int> ExecuteDdlAsync(string sql, CancellationToken cancellationToken) =>
+        db.Database.ExecuteSqlRawAsync(sql, cancellationToken);
 
     public async Task<IReadOnlyList<string>> ListAsync(CancellationToken cancellationToken) =>
         await db.Database.SqlQuery<string>($"""
