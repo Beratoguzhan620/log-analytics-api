@@ -7,6 +7,8 @@ using Serilog;
 //   LOGS_API_KEY        a source key
 //   EVENTS_PER_SECOND   live traffic (default 8)
 //   BACKFILL_HOURS      history to create first, with a few incidents in it (default 24, 0 for none)
+//   MODE=load           instead: send TOTAL events (default 200000) from CONCURRENCY senders (default 4)
+//                       in batches of BATCH (default 1000) as fast as possible, and print the numbers
 var url = Environment.GetEnvironmentVariable("LOGS_URL") ?? "http://localhost:8080";
 var key = Environment.GetEnvironmentVariable("LOGS_API_KEY")
     ?? throw new InvalidOperationException("Set LOGS_API_KEY to a source key.");
@@ -14,6 +16,12 @@ var perSecond = double.Parse(Environment.GetEnvironmentVariable("EVENTS_PER_SECO
 var backfillHours = int.Parse(Environment.GetEnvironmentVariable("BACKFILL_HOURS") ?? "24", System.Globalization.CultureInfo.InvariantCulture);
 
 await WaitForApiAsync(url);
+
+if (Environment.GetEnvironmentVariable("MODE") == "load")
+{
+    await Load.RunAsync(url, key, Int("TOTAL", 200_000), Int("CONCURRENCY", 4), Int("BATCH", 1000));
+    return;
+}
 
 await using var logger = new LoggerConfiguration()
     .MinimumLevel.Verbose()
@@ -33,6 +41,9 @@ using var stop = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; stop.Cancel(); };
 AppDomain.CurrentDomain.ProcessExit += (_, _) => stop.Cancel();
 await shop.RunLiveAsync(perSecond, stop.Token);
+
+static int Int(string name, int fallback) =>
+    int.TryParse(Environment.GetEnvironmentVariable(name), System.Globalization.CultureInfo.InvariantCulture, out var value) ? value : fallback;
 
 static async Task WaitForApiAsync(string url)
 {
