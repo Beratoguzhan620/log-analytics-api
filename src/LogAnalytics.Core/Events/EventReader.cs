@@ -69,13 +69,17 @@ public static class EventReader
 
         for (var index = 0; index < array.Count; index++)
         {
-            if (array[index] is JsonObject json && FromJson(json, out var reason) is { } parsed)
+            if (array[index] is not JsonObject json)
+            {
+                rejected.Add(new RejectedEvent(index, "An event is a JSON object."));
+            }
+            else if (FromJson(json, out var reason) is { } parsed)
             {
                 events.Add((index, parsed));
             }
             else
             {
-                rejected.Add(new RejectedEvent(index, array[index] is JsonObject ? reason! : "An event is a JSON object."));
+                rejected.Add(new RejectedEvent(index, reason!));
             }
         }
 
