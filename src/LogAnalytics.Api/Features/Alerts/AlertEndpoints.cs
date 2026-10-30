@@ -7,6 +7,8 @@ using LogAnalytics.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 
+using LogLevel = LogAnalytics.Core.Events.LogLevel;
+
 namespace LogAnalytics.Api.Features.Alerts;
 
 public sealed record AlertRuleRequest(

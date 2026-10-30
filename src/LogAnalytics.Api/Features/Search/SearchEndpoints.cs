@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
+using LogLevel = LogAnalytics.Core.Events.LogLevel;
+
 namespace LogAnalytics.Api.Features.Search;
 
 public sealed record EventResponse(
