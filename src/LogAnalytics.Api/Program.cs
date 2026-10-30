@@ -4,10 +4,12 @@ using System.Text.Unicode;
 using System.Threading.RateLimiting;
 using LogAnalytics.Api.Common;
 using LogAnalytics.Api.Features.Auth;
+using LogAnalytics.Api.Features.Ingestion;
 using LogAnalytics.Api.Features.Sources;
 using LogAnalytics.Api.Features.Users;
 using LogAnalytics.Api.Logging;
 using LogAnalytics.Infrastructure;
+using LogAnalytics.Infrastructure.Ingestion;
 using LogAnalytics.Infrastructure.Partitions;
 using LogAnalytics.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -51,6 +53,22 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy(AuthEndpoints.LoginRateLimit, context => RateLimitPartition.GetFixedWindowLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = loginsPerMinute, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    // Each source has its own bucket, so one noisy application cannot crowd out the others.
+    var perSource = builder.Configuration.GetSection(IngestionOptions.Section).Get<IngestionOptions>()?.RequestsPerSecondPerSource ?? 50;
+    options.AddPolicy(IngestEndpoints.RateLimit, context => RateLimitPartition.GetTokenBucketLimiter(
+        context.User.FindFirst(SourceKeyHandler.SourceIdClaim)?.Value ?? "anonymous",
+        _ => new TokenBucketRateLimiterOptions
+        {
+            TokenLimit = perSource * 2,
+            TokensPerPeriod = perSource,
+            ReplenishmentPeriod = TimeSpan.FromSeconds(1),
+            QueueLimit = 0,
+        }));
+    options.OnRejected = (context, _) =>
+    {
+        context.HttpContext.Response.Headers.RetryAfter = "1";
+        return ValueTask.CompletedTask;
+    };
 });
 
 builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
@@ -93,6 +111,7 @@ app.MapGet("/", () => Results.Redirect("/scalar")).ExcludeFromDescription();
 app.MapAuthEndpoints();
 app.MapUserEndpoints();
 app.MapSourceEndpoints();
+app.MapIngestEndpoints();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });

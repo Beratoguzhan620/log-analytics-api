@@ -57,7 +57,14 @@ jobs:
           curl -sf -b cookies http://localhost:8080/api/sources | jq -e 'type == "array"' > /dev/null
           docker compose exec -T db psql -U logs -d log_analytics -tAc \
             "SELECT count(*) FROM pg_inherits i JOIN pg_class p ON p.oid = i.inhparent WHERE p.relname = 'log_events'" | grep -qE '^1[0-9]$'
-          echo "API is up and the daily partitions exist."
+          for i in $(seq 1 60); do
+            n=$(docker compose exec -T db psql -U logs -d log_analytics -tAc "SELECT count(*) FROM log_events")
+            [ "$n" -gt 10000 ] && break
+            sleep 2
+          done
+          echo "Events from the generator: $n"
+          [ "$n" -gt 10000 ]
+          echo "API is up, the daily partitions exist and the generator's logs arrived."
 
       - name: Show logs
         if: failure()
