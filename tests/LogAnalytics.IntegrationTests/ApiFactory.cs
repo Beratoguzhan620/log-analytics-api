@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Hosting;
+using LogAnalytics.Infrastructure.Alerts;
+using LogAnalytics.IntegrationTests.Support;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
 
 namespace LogAnalytics.IntegrationTests;
@@ -15,6 +18,9 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     public string ConnectionString => _database.GetConnectionString();
 
+    /// <summary>Every request the alert notifier makes, answered with 200 unless the URL says otherwise.</summary>
+    public RecordingHandler Outbox { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -25,6 +31,14 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("Bootstrap:SampleSourceKey", SampleKey);
         // Every test signs in; the real limit is covered by its own test.
         builder.UseSetting("Auth:LoginAttemptsPerMinute", "100000");
+        // Tests run the evaluation themselves, when their events are in place.
+        builder.UseSetting("Alerts:EvaluationInterval", "01:00:00");
+        builder.UseSetting("Alerts:NotificationService:BaseUrl", "http://notifications.test");
+        builder.UseSetting("Alerts:NotificationService:ApiKey", "ns_testkey1_key-for-the-fake-notification-service-0000");
+        builder.UseSetting("Alerts:NotificationService:Email", "oncall@example.com");
+        builder.ConfigureServices(services => services
+            .AddHttpClient(AlertNotifier.HttpClientName)
+            .ConfigurePrimaryHttpMessageHandler(() => Outbox));
     }
 
     public async Task InitializeAsync()

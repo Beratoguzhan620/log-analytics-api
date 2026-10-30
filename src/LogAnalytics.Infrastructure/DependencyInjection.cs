@@ -1,6 +1,8 @@
+using LogAnalytics.Infrastructure.Alerts;
 using LogAnalytics.Infrastructure.Ingestion;
 using LogAnalytics.Infrastructure.Partitions;
 using LogAnalytics.Infrastructure.Persistence;
+using LogAnalytics.Infrastructure.Queries;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +21,11 @@ public static class DependencyInjection
         services.AddSingleton<IngestionQueue>();
         services.AddSingleton<LogWriter>();
         services.AddHostedService(provider => provider.GetRequiredService<LogWriter>());
+        services.AddSingleton<LogQueries>();
+        services.Configure<AlertOptions>(configuration.GetSection(AlertOptions.Section));
+        services.AddHttpClient(AlertNotifier.HttpClientName, client => client.Timeout = TimeSpan.FromSeconds(10));
+        services.AddSingleton<IAlertNotifier, AlertNotifier>();
+        services.AddScoped<AlertEvaluation>();
         return services;
     }
 
