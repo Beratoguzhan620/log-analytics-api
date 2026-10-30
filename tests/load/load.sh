@@ -18,7 +18,7 @@ KEY=$(curl -sf -b "$JAR" -X POST "$API/api/sources" -H 'Content-Type: applicatio
 
 echo "== Sending $TOTAL events"
 START=$(date +%s.%N)
-docker compose run --rm -T -e MODE=load -e LOGS_API_KEY="$KEY" -e TOTAL="$TOTAL" -e CONCURRENCY=4 -e BATCH=1000 generator | tee /tmp/load-send.json
+docker compose run --rm --no-deps -T -e MODE=load -e LOGS_API_KEY="$KEY" -e TOTAL="$TOTAL" -e CONCURRENCY=4 -e BATCH=1000 generator | tee /tmp/load-send.json
 for _ in $(seq 1 300); do
   STORED=$(psql "SELECT count(*) FROM log_events e JOIN sources s ON s.id = e.source_id WHERE s.name = '$NAME'")
   [ "$STORED" -ge "$TOTAL" ] && break

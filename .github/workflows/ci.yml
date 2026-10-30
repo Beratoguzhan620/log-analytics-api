@@ -58,7 +58,7 @@ jobs:
           docker compose exec -T db psql -U logs -d log_analytics -tAc \
             "SELECT count(*) FROM pg_inherits i JOIN pg_class p ON p.oid = i.inhparent WHERE p.relname = 'log_events'" | grep -qE '^1[0-9]$'
           for i in $(seq 1 60); do
-            n=$(docker compose exec -T db psql -U logs -d log_analytics -tAc "SELECT count(*) FROM log_events")
+            n=$(docker compose exec -T db psql -U logs -d log_analytics -tAc "SELECT count(*) FROM log_events" 2>/dev/null || echo 0)
             [ "$n" -gt 10000 ] && break
             sleep 2
           done
@@ -97,7 +97,7 @@ jobs:
       - name: Wait for the sample traffic
         run: |
           for i in $(seq 1 90); do
-            n=$(docker compose exec -T db psql -U logs -d log_analytics -tAc "SELECT count(*) FROM log_events WHERE level >= 4")
+            n=$(docker compose exec -T db psql -U logs -d log_analytics -tAc "SELECT count(*) FROM log_events WHERE level >= 4" 2>/dev/null || echo 0)
             [ "$n" -gt 100 ] && break
             sleep 2
           done
