@@ -1,0 +1,42 @@
+# One command: docker compose up --build
+# API reference: http://localhost:8080/scalar
+# Sign in with ADMIN_EMAIL / ADMIN_PASSWORD (local defaults below; override them in .env).
+name: log-analytics
+
+x-database: &database "Host=db;Database=log_analytics;Username=logs;Password=${POSTGRES_PASSWORD:-logs-local}"
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: log_analytics
+      POSTGRES_USER: logs
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-logs-local}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logs -d log_analytics"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      args:
+        PROJECT: LogAnalytics.Api
+    restart: on-failure
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Logs: *database
+      Database__MigrateOnStartup: "true"
+      Bootstrap__AdminEmail: ${ADMIN_EMAIL:-admin@example.com}
+      Bootstrap__AdminPassword: ${ADMIN_PASSWORD:-admin-password-local}
+    ports:
+      - "8080:8080"
+
+volumes:
+  db-data:
