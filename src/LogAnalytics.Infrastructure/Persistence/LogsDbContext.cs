@@ -1,3 +1,4 @@
+using LogAnalytics.Core.Alerts;
 using LogAnalytics.Core.Sources;
 using LogAnalytics.Core.Users;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,10 @@ public sealed class LogsDbContext(DbContextOptions<LogsDbContext> options) : DbC
     public DbSet<User> Users => Set<User>();
 
     public DbSet<Source> Sources => Set<Source>();
+
+    public DbSet<AlertRule> AlertRules => Set<AlertRule>();
+
+    public DbSet<AlertFiring> AlertFirings => Set<AlertFiring>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(LogsDbContext).Assembly);
