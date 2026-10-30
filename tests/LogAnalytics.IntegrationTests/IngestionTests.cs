@@ -17,7 +17,7 @@ public sealed class IngestionTests(ApiFactory factory)
 
         var response = await client.SendJsonAsync(new object[]
         {
-            new { timestamp = Now, level = "Error", messageTemplate = "Order {OrderId} failed", properties = new { OrderId = "SIP-1" }, service = "checkout", traceId = "abc123" },
+            new { timestamp = Now, level = "Error", messageTemplate = "Order {OrderId} failed", properties = new Dictionary<string, string> { ["OrderId"] = "SIP-1" }, service = "checkout", traceId = "abc123" },
             new { timestamp = Now.AddSeconds(-1), message = "Started" },
         });
         var body = await response.ReadAsync<JsonElement>();

@@ -74,7 +74,8 @@ internal static class IngestEndpoints
         var outcome = await ReadAndEnqueueAsync(context, source, queue, retention.Value, clock, forceClef: true);
         return outcome.Full
             ? TooMany(context)
-            : Results.Json(new { MinimumLevelAccepted = (string?)null }, statusCode: StatusCodes.Status201Created);
+            // Seq's own answer, spelled the way Seq spells it; its clients read it to adjust their minimum level.
+            : Results.Content("""{"MinimumLevelAccepted":null}""", "application/json", statusCode: StatusCodes.Status201Created);
     }
 
     private static Ok<IngestionStatsResponse> Stats(IngestionQueue queue, LogWriter writer) =>
