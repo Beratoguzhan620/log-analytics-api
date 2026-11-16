@@ -13,6 +13,8 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     public const string AdminEmail = "admin@example.com";
     public const string AdminPassword = "admin-password-for-tests";
     public const string SampleKey = "la_sampletk_sample-source-key-used-only-by-the-tests";
+    public const string DemoViewerEmail = "demo@example.com";
+    public const string DemoViewerPassword = "demo-viewer-password";
 
     private readonly PostgreSqlContainer _database = new PostgreSqlBuilder("postgres:17-alpine").Build();
 
@@ -29,6 +31,8 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("Bootstrap:AdminEmail", AdminEmail);
         builder.UseSetting("Bootstrap:AdminPassword", AdminPassword);
         builder.UseSetting("Bootstrap:SampleSourceKey", SampleKey);
+        builder.UseSetting("Bootstrap:DemoViewerEmail", DemoViewerEmail);
+        builder.UseSetting("Bootstrap:DemoViewerPassword", DemoViewerPassword);
         // Every test signs in; the real limit is covered by its own test.
         builder.UseSetting("Auth:LoginAttemptsPerMinute", "100000");
         // Tests run the evaluation themselves, when their events are in place.

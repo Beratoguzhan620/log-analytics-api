@@ -385,10 +385,22 @@ export function signIn(onSignedIn) {
   h('div', { class: 'field' }, h('label', { for: 'password' }, 'Password'), password),
   button);
 
+  // A public demo publishes a read-only sign-in; elsewhere the answer is null and nothing is shown.
+  const demo = h('div');
+  api('/api/auth/demo').then((account) => {
+    if (!account) return;
+    clear(demo, h('p', { class: 'lead' }, 'This is a public demo with sample data. ',
+      h('button', {
+        class: 'button',
+        type: 'button',
+        onclick: () => { email.value = account.email; password.value = account.password; button.click(); },
+      }, 'Sign in as a viewer')));
+  }).catch(() => {});
+
   queueMicrotask(() => email.focus());
   return h('main', { class: 'signin' }, h('div', { class: 'card' },
     h('p', { class: 'eyebrow' }, 'Log Analytics'),
     h('h1', {}, 'Sign in'),
     h('p', { class: 'lead' }, 'Search your logs, see what is failing, get told when it does.'),
-    message, form));
+    demo, message, form));
 }

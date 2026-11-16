@@ -29,7 +29,7 @@ builder.Services.AddSerilog((services, logger) => logger
     .ReadFrom.Services(services)
     .Enrich.FromLogContext());
 
-var connectionString = builder.Configuration.GetConnectionString("Logs");
+var connectionString = ConnectionStrings.FromUrl(builder.Configuration.GetConnectionString("Logs"));
 if (string.IsNullOrWhiteSpace(connectionString))
 {
     throw new InvalidOperationException(
