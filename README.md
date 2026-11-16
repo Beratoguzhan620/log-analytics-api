@@ -14,6 +14,8 @@ A log service for other applications. They send structured logs (plain JSON, or 
 
 ## Try it
 
+**Live demo:** [log-analytics-demo.onrender.com](https://log-analytics-demo.onrender.com). Press *Sign in as a viewer*: a read-only account over a sample shop's logs. It runs on a free server with the database on Neon: after a quiet spell the first visit can take about a minute.
+
 ```bash
 docker compose up --build
 ```
