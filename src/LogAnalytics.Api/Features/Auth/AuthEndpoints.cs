@@ -42,7 +42,7 @@ internal static class AuthEndpoints
 
     // Null rather than 404 elsewhere, so the sign-in page's question leaves no failed request in the browser console.
     private static Ok<DemoSignIn?> Demo(IConfiguration configuration) =>
-        TypedResults.Ok(
+        TypedResults.Ok<DemoSignIn?>(
             configuration["Bootstrap:DemoViewerEmail"] is { Length: > 0 } email && configuration["Bootstrap:DemoViewerPassword"] is { Length: > 0 } password
                 ? new DemoSignIn(email, password)
                 : null);
