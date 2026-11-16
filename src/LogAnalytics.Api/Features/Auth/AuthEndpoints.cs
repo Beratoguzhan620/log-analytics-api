@@ -36,14 +36,16 @@ internal static class AuthEndpoints
         group.MapGet("/me", Me).RequireAuthorization().WithSummary("The signed-in user");
         group.MapGet("/auth/demo", Demo)
             .WithSummary("The read-only demo sign-in, when this installation publishes one")
-            .WithDescription("Answers 404 unless Bootstrap:DemoViewerEmail and Bootstrap:DemoViewerPassword are set, which only a public demo does.");
+            .WithDescription("Answers null unless Bootstrap:DemoViewerEmail and Bootstrap:DemoViewerPassword are set, which only a public demo does.");
         return app;
     }
 
-    private static Results<Ok<DemoSignIn>, NotFound> Demo(IConfiguration configuration) =>
-        configuration["Bootstrap:DemoViewerEmail"] is { Length: > 0 } email && configuration["Bootstrap:DemoViewerPassword"] is { Length: > 0 } password
-            ? TypedResults.Ok(new DemoSignIn(email, password))
-            : TypedResults.NotFound();
+    // Null rather than 404 elsewhere, so the sign-in page's question leaves no failed request in the browser console.
+    private static Ok<DemoSignIn?> Demo(IConfiguration configuration) =>
+        TypedResults.Ok(
+            configuration["Bootstrap:DemoViewerEmail"] is { Length: > 0 } email && configuration["Bootstrap:DemoViewerPassword"] is { Length: > 0 } password
+                ? new DemoSignIn(email, password)
+                : null);
 
     private static async Task<Results<Ok<UserResponse>, ValidationProblem>> Login(
         LoginRequest request, HttpContext context, UserSignIn signIn, CancellationToken ct)

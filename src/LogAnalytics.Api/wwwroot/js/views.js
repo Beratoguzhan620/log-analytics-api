@@ -385,9 +385,10 @@ export function signIn(onSignedIn) {
   h('div', { class: 'field' }, h('label', { for: 'password' }, 'Password'), password),
   button);
 
-  // A public demo publishes a read-only sign-in; elsewhere this answers 404 and nothing is shown.
+  // A public demo publishes a read-only sign-in; elsewhere the answer is null and nothing is shown.
   const demo = h('div');
   api('/api/auth/demo').then((account) => {
+    if (!account) return;
     clear(demo, h('p', { class: 'lead' }, 'This is a public demo with sample data. ',
       h('button', {
         class: 'button',
