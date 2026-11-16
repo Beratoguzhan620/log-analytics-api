@@ -1,0 +1,40 @@
+# The public demo on Render's free plan: one web service from deploy/demo/Dockerfile (the API and the sample-shop
+# generator), with the database on Neon. Render asks for the connection string once; nothing secret is in here.
+services:
+  - type: web
+    name: log-analytics-demo
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./deploy/demo/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health/ready
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: ConnectionStrings__Logs
+        sync: false
+      - key: Database__MigrateOnStartup
+        value: "true"
+      # The admin's password is generated and only visible in Render; visitors get the read-only viewer below.
+      - key: Bootstrap__AdminEmail
+        value: admin@log-analytics.demo
+      - key: Bootstrap__AdminPassword
+        generateValue: true
+      - key: Bootstrap__DemoViewerEmail
+        value: demo@log-analytics.demo
+      - key: Bootstrap__DemoViewerPassword
+        value: demo-viewer-password
+      - key: DEMO_SOURCE_SECRET
+        generateValue: true
+      # The service sleeps when nobody visits: each wake adds a few hours of history and a little live traffic,
+      # and three days of retention keep the free database small.
+      - key: BACKFILL_HOURS
+        value: "6"
+      - key: EVENTS_PER_SECOND
+        value: "2"
+      - key: Retention__Days
+        value: "3"
+      - key: ASPNETCORE_FORWARDEDHEADERS_ENABLED
+        value: "true"
+      - key: PORT
+        value: "8080"

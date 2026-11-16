@@ -66,6 +66,21 @@ public sealed class AuthTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task The_published_demo_sign_in_is_a_viewer_that_cannot_manage_anything()
+    {
+        using var demo = factory.CreateClient();
+        var published = await (await demo.GetAsync("/api/auth/demo")).ReadAsync<DemoSignInDto>();
+        await demo.SignInAsync(published.Email, published.Password);
+
+        var me = await (await demo.GetAsync("/api/me")).ReadAsync<UserDto>();
+
+        Assert.Equal(ApiFactory.DemoViewerEmail, published.Email);
+        Assert.Equal("Viewer", me.Role);
+        Assert.Equal(HttpStatusCode.Forbidden, (await demo.PostAsJsonAsync("/api/sources", new { name = "Spam" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await demo.GetAsync("/api/users")).StatusCode);
+    }
+
+    [Fact]
     public async Task A_source_key_cannot_read_anything()
     {
         var (client, _) = await factory.NewSourceAsync();
@@ -92,3 +107,5 @@ public sealed class AuthTests(ApiFactory factory)
         Assert.Equal(HttpStatusCode.BadRequest, shortPassword.StatusCode);
     }
 }
+
+public sealed record DemoSignInDto(string Email, string Password);

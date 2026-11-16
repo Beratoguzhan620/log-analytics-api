@@ -13,6 +13,9 @@ namespace LogAnalytics.Api.Features.Auth;
 
 public sealed record LoginRequest(string Email, string Password);
 
+/// <summary>The published sign-in of a public demo's read-only viewer.</summary>
+public sealed record DemoSignIn(string Email, string Password);
+
 public sealed record UserResponse(Guid Id, string Email, string DisplayName, UserRole Role, DateTimeOffset CreatedAt)
 {
     public static UserResponse Create(User user) => new(user.Id, user.Email, user.DisplayName, user.Role, user.CreatedAt);
@@ -31,8 +34,16 @@ internal static class AuthEndpoints
             .WithDescription("Sets an HTTP-only session cookie that the dashboard and the query endpoints use.");
         group.MapPost("/auth/logout", Logout).WithSummary("Sign out");
         group.MapGet("/me", Me).RequireAuthorization().WithSummary("The signed-in user");
+        group.MapGet("/auth/demo", Demo)
+            .WithSummary("The read-only demo sign-in, when this installation publishes one")
+            .WithDescription("Answers 404 unless Bootstrap:DemoViewerEmail and Bootstrap:DemoViewerPassword are set, which only a public demo does.");
         return app;
     }
+
+    private static Results<Ok<DemoSignIn>, NotFound> Demo(IConfiguration configuration) =>
+        configuration["Bootstrap:DemoViewerEmail"] is { Length: > 0 } email && configuration["Bootstrap:DemoViewerPassword"] is { Length: > 0 } password
+            ? TypedResults.Ok(new DemoSignIn(email, password))
+            : TypedResults.NotFound();
 
     private static async Task<Results<Ok<UserResponse>, ValidationProblem>> Login(
         LoginRequest request, HttpContext context, UserSignIn signIn, CancellationToken ct)

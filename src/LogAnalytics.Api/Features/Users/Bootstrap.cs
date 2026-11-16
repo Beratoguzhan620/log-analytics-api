@@ -7,8 +7,9 @@ using Microsoft.EntityFrameworkCore;
 namespace LogAnalytics.Api.Features.Users;
 
 /// <summary>
-/// What a fresh installation needs from configuration: the first admin (when there are no users yet) and,
-/// optionally, a source with a known key for the sample generator. Secrets are read, never written anywhere.
+/// What a fresh installation needs from configuration: the first admin (when there are no users yet),
+/// optionally a source with a known key for the sample generator and, for a public demo, a read-only viewer whose
+/// sign-in is published. Secrets are read, never written anywhere.
 /// </summary>
 internal static partial class Bootstrap
 {
@@ -38,6 +39,26 @@ internal static partial class Bootstrap
             LogAdminCreated(logger);
         }
 
+        var viewerEmail = configuration["Bootstrap:DemoViewerEmail"];
+        var viewerPassword = configuration["Bootstrap:DemoViewerPassword"];
+        if (!string.IsNullOrWhiteSpace(viewerEmail) && !string.IsNullOrEmpty(viewerPassword))
+        {
+            var normalized = User.NormalizeEmail(viewerEmail);
+            if (!await db.Users.AnyAsync(u => u.Email == normalized, cancellationToken))
+            {
+                if (viewerPassword.Length < User.MinPasswordLength)
+                {
+                    throw new InvalidOperationException($"Bootstrap:DemoViewerPassword needs at least {User.MinPasswordLength} characters.");
+                }
+
+                var viewer = User.Create(viewerEmail, "Demo viewer", UserRole.Viewer, now);
+                viewer.SetPasswordHash(scope.ServiceProvider.GetRequiredService<PasswordVerifier>().Hash(viewer, viewerPassword));
+                db.Users.Add(viewer);
+                await db.SaveChangesAsync(cancellationToken);
+                LogDemoViewerCreated(logger);
+            }
+        }
+
         var sampleKey = configuration["Bootstrap:SampleSourceKey"];
         if (!string.IsNullOrWhiteSpace(sampleKey) && ApiKey.PrefixOf(sampleKey) is { } prefix
             && !await db.Sources.AnyAsync(s => s.KeyPrefix == prefix || s.Name == SampleSourceName, cancellationToken))
@@ -50,6 +71,9 @@ internal static partial class Bootstrap
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Created the first admin from configuration")]
     private static partial void LogAdminCreated(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Created the read-only demo viewer from configuration")]
+    private static partial void LogDemoViewerCreated(ILogger logger);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Created the sample source (key prefix {KeyPrefix})")]
     private static partial void LogSampleSourceCreated(ILogger logger, string keyPrefix);
