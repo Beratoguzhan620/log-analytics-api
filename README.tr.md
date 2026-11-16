@@ -14,6 +14,8 @@ Diğer uygulamalar için bir log servisi. Uygulamalar yapılandırılmış logla
 
 ## Deneme
 
+**Canlı demo:** [log-analytics-demo.onrender.com](https://log-analytics-demo.onrender.com). *Sign in as a viewer*'a bas: örnek bir dükkanın logları üzerinde salt okunur bir hesap. Ücretsiz bir sunucuda, veritabanı Neon'da çalışıyor: bir süre kimse açmadıysa ilk açılış bir dakika kadar sürebilir.
+
 ```bash
 docker compose up --build
 ```
